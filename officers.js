@@ -1,6 +1,7 @@
 import puppeteer from "puppeteer";
 import dotenv from "dotenv";
 import delay from "./utils/timeout.js";
+import fs from "fs";
 
 (async () => {
 
@@ -50,7 +51,7 @@ import delay from "./utils/timeout.js";
     await page.waitForSelector(submitButton,  {timeout: 5000});
     await page.click(submitButton);
 
-    console.log("wait for page render");
+    console.log("    Wait for the page to render...");
     await delay(4000);
     
     await page.waitForSelector(passwdInput, {timeout: 5000});
@@ -59,8 +60,32 @@ import delay from "./utils/timeout.js";
     await page.waitForSelector(loginMS, {timeout: 5000});
     await page.click(loginMS);
     
-    //Welcome to bubo page
+    //Welcome to bubo
+    console.log("    Welcome to Bubo home page")
     console.log("Step 4: toggle officer switch");
-    await page.waitForSelector(officerSwitch, {timeout: 5000});
+    await delay(25000);
     await page.click(officerSwitch);
+
+    
+    //await delay(6000);
+    console.log("Step 5: getting officers list...");
+    const officersName = await page.$$eval('.ant-list-items > div > div > div.ant-dropdown-trigger div > div', nodes =>
+        nodes.map(node => node.innerText.trim())
+    );
+
+
+    const officersHours = await page.$$eval('.ant-list-items > div > div > div.text-center', nodes =>
+        nodes.map(node => node.innerText.trim())
+    )
+
+    const officers = officersName.map((name, idx) => ({
+    name: name.split('\n')[0], // Solo el nombre antes del salto de línea
+    hours: officersHours[idx]
+}));
+
+fs.writeFileSync("officersList.json", JSON.stringify(officers, null, 2), "utf-8");
+    
+    console.log("Json file was created");
+    await page.close();
+    browser.close();
 })();
